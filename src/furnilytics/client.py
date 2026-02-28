@@ -151,43 +151,88 @@ class Client:
     # -------------------------
     # Internal HTTP helper
     # -------------------------
+
     def _get_json(self, path: str, params: Optional[Dict[str, Any]] = None) -> Union[Dict[str, Any], List[Any]]:
         url = self.base_url.rstrip("/") + path
         r = self.session.get(url, params=params, timeout=self.timeout)
 
+        # Parse JSON once (if possible). Many error responses are JSON too.
+        parsed: Any = None
+        is_json = False
+        try:
+            parsed = r.json()
+            is_json = True
+        except Exception:
+            parsed = None
+            is_json = False
+
+        # Store helpful response meta for debugging / caching
         self._last_meta = {
+            "method": "GET",
+            "url": url,
+            "params": params or {},
+            "status": r.status_code,
             "ETag": r.headers.get("ETag"),
             "Cache-Control": r.headers.get("Cache-Control"),
-            "Status": r.status_code,
+            "Retry-After": r.headers.get("Retry-After"),
+            "X-RateLimit-Reset": r.headers.get("X-RateLimit-Reset"),
         }
 
-        if r.status_code == 401:
-            raise AuthError("Invalid or missing API key.")
-        if r.status_code == 403:
-            # Pro-required case in your API returns a structured JSON detail
-            try:
-                detail = r.json()
-            except Exception:
-                detail = {"detail": "Forbidden"}
-            raise AuthError(detail.get("detail") if isinstance(detail, dict) else "Forbidden")
-        if r.status_code == 404:
-            try:
-                msg = r.json().get("detail", "Resource not found")
-            except Exception:
-                msg = "Resource not found"
-            raise NotFoundError(msg)
-        if r.status_code == 429:
-            raise RateLimitError("Rate limit exceeded", reset_at=r.headers.get("X-RateLimit-Reset"))
-        if 400 <= r.status_code < 500:
-            try:
-                detail = r.json().get("detail")
-            except Exception:
-                detail = None
-            raise ClientError(detail or f"Client error ({r.status_code})")
-        if 500 <= r.status_code < 600:
-            raise ClientError(f"Server error ({r.status_code})")
+        def _detail_fallback(default: str) -> str:
+            """
+            Normalize API error detail into a friendly string.
+            Accepts:
+            - {"detail": "..."}
+            - {"detail": {"msg": "..."}}
+            - "..."
+            """
+            if is_json:
+                if isinstance(parsed, dict):
+                    d = parsed.get("detail")
+                    if isinstance(d, str) and d.strip():
+                        return d
+                    if isinstance(d, dict):
+                        # common FastAPI patterns
+                        if isinstance(d.get("msg"), str) and d["msg"].strip():
+                            return d["msg"]
+                        # last resort: compact dict
+                        return str(d)
+                    # sometimes APIs just return {"message": "..."}
+                    m = parsed.get("message")
+                    if isinstance(m, str) and m.strip():
+                        return m
+                elif isinstance(parsed, str) and parsed.strip():
+                    return parsed
+            return default
 
-        try:
-            return r.json()
-        except Exception as exc:
-            raise ClientError(f"Invalid JSON response: {exc}") from exc
+        # Auth / access control
+        if r.status_code == 401:
+            raise AuthError(_detail_fallback("Invalid or missing API key."))
+        if r.status_code == 403:
+            raise AuthError(_detail_fallback("Forbidden."))
+
+        # Not found
+        if r.status_code == 404:
+            raise NotFoundError(_detail_fallback("Resource not found."))
+
+        # Rate limit
+        if r.status_code == 429:
+            reset = r.headers.get("X-RateLimit-Reset") or r.headers.get("Retry-After")
+            raise RateLimitError(_detail_fallback("Rate limit exceeded."), reset_at=reset)
+
+        # Other 4xx
+        if 400 <= r.status_code < 500:
+            raise ClientError(_detail_fallback(f"Client error ({r.status_code})."))
+
+        # 5xx
+        if 500 <= r.status_code < 600:
+            raise ClientError(_detail_fallback(f"Server error ({r.status_code})."))
+
+        # Success but not JSON (unexpected for this client)
+        if not is_json:
+            snippet = (r.text or "")[:200].strip()
+            if snippet:
+                raise ClientError(f"Invalid JSON response (HTTP {r.status_code}): {snippet}")
+            raise ClientError(f"Invalid JSON response (HTTP {r.status_code}).")
+
+        return parsed
