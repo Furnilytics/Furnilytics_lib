@@ -15,7 +15,6 @@ Ideal for research automation, dashboards, and quantitative analysis pipelines.
 
 ![PyPI](https://img.shields.io/pypi/v/furnilytics)
 ![Python](https://img.shields.io/pypi/pyversions/furnilytics)
-![License](https://img.shields.io/github/license/Furnilytics/Furnilytics_lib)
 
 ---
 
