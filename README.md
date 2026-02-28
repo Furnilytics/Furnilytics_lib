@@ -11,7 +11,7 @@ Supports:
 * `/data/{id}` retrieval
 * Public and API-key protected datasets
 
-Ideal for research automation, dashboards, and quantitative analysis pipelines.
+Ideal for research automation, dashboards, and quantitative analysis pipelines. 
 
 ---
 
