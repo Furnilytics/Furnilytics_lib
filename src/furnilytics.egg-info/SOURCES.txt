@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/furnilytics/__init__.py
+src/furnilytics/__main__.py
+src/furnilytics/client.py
+src/furnilytics.egg-info/PKG-INFO
+src/furnilytics.egg-info/SOURCES.txt
+src/furnilytics.egg-info/dependency_links.txt
+src/furnilytics.egg-info/requires.txt
+src/furnilytics.egg-info/top_level.txt
