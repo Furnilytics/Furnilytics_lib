@@ -251,8 +251,12 @@ Website: [https://www.furnilytics.com](https://www.furnilytics.com)
 
 ---
 
-## License
+## License & scope
 
 MIT License
+
+This license applies only to the Python client library code.
+
+Access to and usage of the Furnilytics API and its datasets are governed by separate Terms of Service.
 
 ---
