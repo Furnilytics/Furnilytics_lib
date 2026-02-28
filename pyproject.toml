@@ -1,0 +1,22 @@
+[project]
+name = "furnilytics"
+version = "0.1.3"
+description = "Python client for the Furnilytics API (topic/subtopic/dataset)."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name="Thijs Meijerink", email="thijs.meijerink@furnilytics.com"}]
+license = {text = "MIT"}
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+dependencies = [
+  "requests>=2.32",
+  "urllib3>=2.2",
+  "pandas>=2.0"
+]
+
+[project.urls]
+Homepage = "https://www.furnilytics.com"
+
