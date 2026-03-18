@@ -112,6 +112,7 @@ class Client:
     # -------------------------
     # Data
     # -------------------------
+
     def data(
         self,
         dataset_id: str,
@@ -119,16 +120,11 @@ class Client:
         frm: Optional[str] = None,
         to: Optional[str] = None,
         limit: Optional[int] = None,
+        **filters: Any,
     ) -> pd.DataFrame:
-        """
-        Returns data-only rows as a DataFrame from /data/{id}.
-        Optional server-side filters:
-          - frm (YYYY-MM-DD)
-          - to  (YYYY-MM-DD)
-          - limit (<= 20000)
-        """
         safe_id = dataset_id.strip("/")
         params: Dict[str, Any] = {}
+
         if frm is not None:
             params["frm"] = frm
         if to is not None:
@@ -136,13 +132,19 @@ class Client:
         if limit is not None:
             params["limit"] = int(limit)
 
+        # pass through arbitrary API filters like geo, export_country, import_country
+        for k, v in filters.items():
+            if v is None:
+                continue
+            if isinstance(v, (list, tuple, set)):
+                params[k] = ",".join(str(x) for x in v)
+            else:
+                params[k] = str(v)
+
         rows = self._get_json(f"/data/{safe_id}", params=params)
 
-        # /data/{id} returns a LIST, not {data: ...}
         if isinstance(rows, list):
             return pd.DataFrame(rows)
-
-        # Defensive fallback if server changes shape
         if isinstance(rows, dict) and "data" in rows:
             return pd.DataFrame(rows["data"])
 
