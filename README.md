@@ -73,11 +73,11 @@ meta = cli.metadata()
 print(meta.head())
 
 # Get metadata for one dataset
-info = cli.metadata_one("macro_economics/consumer/eu_consumer_sentiment")
+info = cli.metadata_one("other/materials/eu_pb_price")
 print(info["meta"])
 
 # Fetch dataset rows
-df = cli.data("macro_economics/consumer/eu_consumer_sentiment", limit=10)
+df = cli.data("other/materials/eu_pb_price", limit=10, geo=["PL", "DE"])
 print(df.head())
 ```
 
@@ -115,7 +115,7 @@ The `data()` method supports optional filters:
 
 ```python
 df = cli.data(
-    "macro_economics/consumer/eu_consumer_sentiment",
+    "other/materials/eu_pb_price",
     frm="2020-01-01",
     to="2023-12-31",
     limit=1000
@@ -127,6 +127,7 @@ Parameters:
 * `frm` — start date (YYYY-MM-DD)
 * `to` — end date (YYYY-MM-DD)
 * `limit` — max rows (server limit applies)
+* `<column>=value` — filter by any column (e.g. `geo=PL`)
 
 ---
 
